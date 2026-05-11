@@ -3,25 +3,28 @@ package com.example.todoapp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Optional;
+import java.net.URI;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import java.util.regex.Matcher;
+import java.util.Collection;
 import static java.util.Objects.nonNull;
+import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.nonNull;
-orgslf4jLogger
-/**orgslf4jLoggerFactory
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
+/**
  * Main class of the application. Managing routing and HTTP layer.
  */
 public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
     private static final Pattern ID_PATH = Pattern.compile("^/tasks/([0-9]+)$");
+    private static final Pattern COUNT_PATH = Pattern.compile("^/tasks/count$");
     private static final TaskDao dao = new TaskDao();
 
     public static void main(String[] args) throws Exception {
@@ -42,9 +45,38 @@ public class Application {
         if ("POST".equals(method) && "/tasks".equals(path)) {
             Task input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), Task.class);
             Task createdTask = dao.save(input);
+            log.debug("Task created with id: {}", createdTask.id());
 
             exchange.getResponseHeaders().add("Location", "/tasks/" + createdTask.id());
             sendResponse(exchange, 201, JsonUtils.serialize(createdTask));
+            return;
+        }
+        //endregion
+
+        //region Manage GET /tasks (list all tasks)
+        if ("GET".equals(method) && "/tasks".equals(path)) {
+            URI uri = exchange.getRequestURI();
+            String query = uri.getQuery();
+            boolean todoOnly = false;
+            
+            if (nonNull(query)) {
+                todoOnly = query.contains("todo-only=true");
+            }
+            
+            Collection<Task> tasks = dao.findAll(todoOnly);
+            if (tasks.isEmpty()) {
+                sendResponse(exchange, 204, null);
+            } else {
+                sendResponse(exchange, 200, JsonUtils.serialize(tasks));
+            }
+            return;
+        }
+        //endregion
+
+        //region Manage GET /tasks/count (bonus)
+        if ("GET".equals(method) && COUNT_PATH.matcher(path).matches()) {
+            int count = dao.count();
+            sendResponse(exchange, 200, JsonUtils.serialize(count));
             return;
         }
         //endregion
@@ -62,7 +94,45 @@ public class Application {
             }
             return;
         }
-        
+        //endregion
+
+        //region Manage PUT /tasks/{id}
+        if ("PUT".equals(method) && m.matches()) {
+            int id = Integer.parseInt(m.group(1));
+            Task input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), Task.class);
+            Task updatedTask = new Task(id, input.title(), input.description(), input.done());
+            
+            if (dao.update(updatedTask)) {
+                log.debug("Task updated with id: {}", id);
+                sendResponse(exchange, 204, null);
+            } else {
+                sendResponse(exchange, 404, null);
+            }
+            return;
+        }
+        //endregion
+
+        //region Manage DELETE /tasks/{id}
+        if ("DELETE".equals(method) && m.matches()) {
+            int id = Integer.parseInt(m.group(1));
+            
+            if (dao.deleteById(id)) {
+                log.debug("Task deleted with id: {}", id);
+                sendResponse(exchange, 204, null);
+            } else {
+                sendResponse(exchange, 404, null);
+            }
+            return;
+        }
+        //endregion
+
+        //region Manage DELETE /tasks (bonus - delete all)
+        if ("DELETE".equals(method) && "/tasks".equals(path)) {
+            dao.deleteAll();
+            log.debug("All tasks deleted");
+            sendResponse(exchange, 204, null);
+            return;
+        }
         //endregion
 
         // Sinon → 404

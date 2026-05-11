@@ -66,6 +66,9 @@ paths:
             responses:
                 '204':
                     description: Toutes les tâches supprimées
+                '404':
+                    description: Tâche non trouvée
+
 
     /tasks/count:
         get:
