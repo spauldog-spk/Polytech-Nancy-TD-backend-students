@@ -1,21 +1,21 @@
 package com.example.todoapp;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.regex.Matcher;
+import static java.util.Objects.nonNull;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.nonNull;
+orgslf4jLogger
+/**orgslf4jLoggerFactory
 
-/**
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
  * Main class of the application. Managing routing and HTTP layer.
  */
 public class Application {
@@ -62,6 +62,7 @@ public class Application {
             }
             return;
         }
+        
         //endregion
 
         // Sinon → 404

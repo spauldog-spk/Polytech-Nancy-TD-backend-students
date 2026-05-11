@@ -14,6 +14,28 @@ tags:
 
 paths:
     /tasks:
+        get:
+            tags: [ tasks ]
+            summary: Récupérer toutes les tâches
+            operationId: getTasks
+            parameters:
+                -   in: query
+                    name: todo-only
+                    required: false
+                    description: Si true, retourne uniquement les tâches non complétées
+                    schema:
+                        type: boolean
+            responses:
+                '200':
+                    description: Tâches trouvées avec succès
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Task'
+                '204':
+                    description: Aucune tâche trouvée
         post:
             tags: [ tasks ]
             summary: Créer une tâche
@@ -23,7 +45,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Task'
+                            $ref: '#/components/schemas/TaskInput'
             responses:
                 '201':
                     description: Tâche créée avec succès
@@ -37,6 +59,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Task'
+        delete:
+            tags: [ tasks ]
+            summary: Supprimer toutes les tâches
+            operationId: deleteAllTasks
+            responses:
+                '204':
+                    description: Toutes les tâches supprimées
+
+    /tasks/count:
+        get:
+            tags: [ tasks ]
+            summary: Récupérer le nombre de tâches
+            operationId: countTasks
+            responses:
+                '200':
+                    description: Nombre de tâches récupéré avec succès
+                    content:
+                        application/json:
+                            schema:
+                                type: integer
+                                example: 3
 
     /tasks/{id}:
         parameters:
@@ -61,6 +104,33 @@ paths:
                                 $ref: '#/components/schemas/Task'
                 '404':
                     description: Tâche non trouvée
+        put:
+            tags: [ tasks ]
+            summary: Modifier une tâche
+            description: Modifier une tâche existante
+            operationId: updateTask
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskInput'
+            responses:
+                '204':
+                    description: Tâche modifiée avec succès
+                '404':
+                    description: Tâche non trouvée
+        delete:
+            tags: [ tasks ]
+            summary: Supprimer une tâche
+            description: Supprimer une tâche par son identifiant
+            operationId: deleteTask
+            responses:
+                '204':
+                    description: Tâche supprimée avec succès
+                '404':
+                    description: Tâche non trouvée
+
 components:
     schemas:
         Task:
@@ -84,4 +154,19 @@ components:
                     example: false
             required:
                 - id
+                - title
+        TaskInput:
+            type: object
+            description: Entrée pour créer ou modifier une tâche
+            properties:
+                title:
+                    type: string
+                    example: Acheter du lait
+                description:
+                    type: string
+                    example: 2L demi-écrémé
+                done:
+                    type: boolean
+                    example: false
+            required:
                 - title
