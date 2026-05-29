@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import java.sql.SQLException;
 import java.util.Collection;
 import static java.util.Objects.nonNull;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public class Controller {
     private static final TaskDAO dao = new TaskDAO(); // objet de type TaskDAO qui va permettre de faire le lien entre la couche présentation et la couche service, c'est grâce à cet objet que la classe Controller va pouvoir appeler les méthodes de la classe TaskService pour faire le lien avec la couche DAO et accéder aux données des taches
 
     
-    public static void handleTasks(HttpExchange exchange) throws IOException { // méthode qui va gérer les requêtes HTTP qui ont pour path /tasks, 
+    public static void handleTasks(HttpExchange exchange) throws IOException, SQLException { // méthode qui va gérer les requêtes HTTP qui ont pour path /tasks, 
         String method = exchange.getRequestMethod();       // c'est la méthode qui va être appelée par le serveur HTTP lorsqu'une requête est reçue sur ce path,
         String path = exchange.getRequestURI().getPath(); //  elle va analyser la requête (méthode HTTP, path, query parameters), faire le lien avec la couche
                                                          //  service via l'objet TaskDAO, et renvoyer la réponse HTTP appropriée
