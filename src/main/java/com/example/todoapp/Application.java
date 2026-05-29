@@ -41,6 +41,14 @@ public class Application {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
 
+        addCorsHeaders(exchange);
+        if ("OPTIONS".equals(method)) {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            exchange.sendResponseHeaders(204, -1);
+            return;
+        }
+
         //region Manage POST /tasks
         if ("POST".equals(method) && "/tasks".equals(path)) {
             Task input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), Task.class);
@@ -151,5 +159,9 @@ public class Application {
             exchange.sendResponseHeaders(status, 0);
             exchange.close();
         }
+    }
+
+    private static void addCorsHeaders(HttpExchange exchange) {
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
     }
 }
