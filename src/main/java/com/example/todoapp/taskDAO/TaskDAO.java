@@ -1,4 +1,4 @@
-package com.example.todoapp;
+package com.example.todoapp.taskDAO;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -6,25 +6,26 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Data Access Object for {@link Task} model.
- */
-public class TaskDao {
+import com.example.todoapp.business.task.Task;
 
-    private final Map<Integer, Task> storage = new HashMap<>();
-    private int nextId = 4;
 
-    {
+public class TaskDAO {
+
+    private final Map<Integer, Task> storage = new HashMap<>(); // stockage en mémoire des taches, avec l'id de la tache comme clé et l'objet tache comme valeur
+    private int nextId = 4; // prochain id à attribuer, initialisé à 4 car les taches d'exemple ont des ids de 1 à 3
+
+    { // bloc d'initialisation pour pré-remplir le stockage avec des taches d'exemple (3 taches avec des ids de 1 à 3)
         save(new Task(1, "Réviser DS de maths", "Séries numériques et probabilités.", false));
         save(new Task(2, "Valider mon PIVE", "PIVE Club Poker.", true));
         save(new Task(3, "Choisir mon parcours de 4A", "SIR ou SIA ?", false));
     }
 
-    /**
+    /** // commentaire de la méthode save qui explique que cette méthode permet de sauvegarder une tache en lui attribuant un id si elle n'en a pas déjà un, et en la stockant dans la map de stockage
      * Persist {@link Task} model.
-     * @param task task to save.
-     * @return task model.
+     * @param task tache à sauvegarder
+     * @return tache sauvegardée avec un id attribué
      */
+
     public Task save(Task task) {
         Task toSave = task;
         if (task.id() == null || task.id() == 0) {
