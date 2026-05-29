@@ -369,7 +369,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Nouvelle tâche\",\n  \"description\": \"Description de la tâche\",\n  \"done\": false\n}",
+          "raw": "{\n  \"title\": \"Nouvelle tâche\",\n  \"description\": \"Description de la tâche\"\n}",
           "options": {
             "raw": {
               "language": "json"

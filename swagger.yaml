@@ -45,7 +45,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/TaskInput'
+                            $ref: '#/components/schemas/TaskCreate'
             responses:
                 '201':
                     description: Tâche créée avec succès
@@ -59,6 +59,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Task'
+                '400':
+                    description: Requête invalide
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
         delete:
             tags: [ tasks ]
             summary: Supprimer toutes les tâches
@@ -117,10 +123,16 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/TaskInput'
+                            $ref: '#/components/schemas/TaskUpdate'
             responses:
                 '204':
                     description: Tâche modifiée avec succès
+                '400':
+                    description: Requête invalide
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
                 '404':
                     description: Tâche non trouvée
         delete:
@@ -158,9 +170,22 @@ components:
             required:
                 - id
                 - title
-        TaskInput:
+        TaskCreate:
             type: object
-            description: Entrée pour créer ou modifier une tâche
+            description: Entrée pour créer une tâche
+            properties:
+                title:
+                    type: string
+                    example: Acheter du lait
+                description:
+                    type: string
+                    example: 2L demi-écrémé
+            required:
+                - title
+                - description
+        TaskUpdate:
+            type: object
+            description: Entrée pour modifier une tâche
             properties:
                 title:
                     type: string
@@ -173,3 +198,18 @@ components:
                     example: false
             required:
                 - title
+                - description
+                - done
+        ErrorResponse:
+            type: object
+            description: Erreur de validation ou de traitement
+            properties:
+                field:
+                    type: string
+                    example: title
+                message:
+                    type: string
+                    example: Le titre est requis.
+            required:
+                - field
+                - message

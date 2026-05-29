@@ -15,6 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.todoapp.business.task.Task;
+import com.example.todoapp.presentation.dto.TaskCreateDto;
+import com.example.todoapp.presentation.dto.TaskResponseDto;
+import com.example.todoapp.presentation.dto.TaskUpdateDto;
+import com.example.todoapp.presentation.dto.ValidationErrorDto;
 import com.example.todoapp.taskDAO.TaskDAO;
 import com.example.todoapp.util.JsonUtils;
 import com.sun.net.httpserver.HttpExchange;
@@ -45,12 +49,24 @@ public class Controller {
         //region Manage POST /tasks
         // partie qui va permettre de créer une nouvelle tache.
         if ("POST".equals(method) && "/tasks".equals(path)) {
-            Task input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), Task.class);
-            Task createdTask = dao.save(input);
+            TaskCreateDto input;
+            try {
+                input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), TaskCreateDto.class);
+            } catch (IOException e) {
+                sendError(exchange, 400, new ValidationErrorDto("body", "Payload JSON invalide."));
+                return;
+            }
+            Optional<ValidationErrorDto> validationError = validateCreateDto(input);
+            if (validationError.isPresent()) {
+                sendError(exchange, 400, validationError.get());
+                return;
+            }
+
+            Task createdTask = dao.save(new Task(input.title(), input.description()));
             log.debug("Task created with id: {}", createdTask.id());
 
             exchange.getResponseHeaders().add("Location", "/tasks/" + createdTask.id());
-            sendResponse(exchange, 201, JsonUtils.serialize(createdTask));
+            sendResponse(exchange, 201, JsonUtils.serialize(toDto(createdTask)));
             return;
         }
         //endregion
@@ -70,7 +86,7 @@ public class Controller {
             if (tasks.isEmpty()) {
                 sendResponse(exchange, 204, null);
             } else {
-                sendResponse(exchange, 200, JsonUtils.serialize(tasks));
+                sendResponse(exchange, 200, JsonUtils.serialize(tasks.stream().map(Controller::toDto).toList()));
             }
             return;
         }
@@ -93,7 +109,7 @@ public class Controller {
             Optional<Task> task = dao.findById(id);
 
             if (task.isPresent()) {
-                sendResponse(exchange, 200, JsonUtils.serialize(task.get()));
+                sendResponse(exchange, 200, JsonUtils.serialize(toDto(task.get())));
             } else {
                 sendResponse(exchange, 404, null);
             }
@@ -105,7 +121,18 @@ public class Controller {
         // partie qui va permettre de mettre à jour une tache par son id
         if ("PUT".equals(method) && m.matches()) {
             int id = Integer.parseInt(m.group(1));
-            Task input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), Task.class);
+            TaskUpdateDto input;
+            try {
+                input = JsonUtils.deserialize(new String(exchange.getRequestBody().readAllBytes(), UTF_8), TaskUpdateDto.class);
+            } catch (IOException e) {
+                sendError(exchange, 400, new ValidationErrorDto("body", "Payload JSON invalide."));
+                return;
+            }
+            Optional<ValidationErrorDto> validationError = validateUpdateDto(input);
+            if (validationError.isPresent()) {
+                sendError(exchange, 400, validationError.get());
+                return;
+            }
             Task updatedTask = new Task(id, input.title(), input.description(), input.done());
             
             if (dao.update(updatedTask)) {
@@ -145,6 +172,61 @@ public class Controller {
 
         // Sinon → 404
         sendResponse(exchange, 404, null);
+    }
+
+    private static TaskResponseDto toDto(Task task) {
+        return new TaskResponseDto(task.id(), task.title(), task.description(), task.done());
+    }
+
+    private static Optional<ValidationErrorDto> validateCreateDto(TaskCreateDto dto) {
+        if (dto == null) {
+            return Optional.of(new ValidationErrorDto("body", "Le corps de la requête est requis."));
+        }
+        if (dto.title() == null || dto.title().isBlank()) {
+            return Optional.of(new ValidationErrorDto("title", "Le titre est requis."));
+        }
+        if (dto.title().length() > 50) {
+            return Optional.of(new ValidationErrorDto("title", "Le titre ne doit pas dépasser 50 caractères."));
+        }
+        if (dto.description() == null || dto.description().isBlank()) {
+            return Optional.of(new ValidationErrorDto("description", "La description est requise."));
+        }
+        if (dto.description().length() > 255) {
+            return Optional.of(new ValidationErrorDto("description", "La description ne doit pas dépasser 255 caractères."));
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<ValidationErrorDto> validateUpdateDto(TaskUpdateDto dto) {
+        if (dto == null) {
+            return Optional.of(new ValidationErrorDto("body", "Le corps de la requête est requis."));
+        }
+        if (dto.title() == null || dto.title().isBlank()) {
+            return Optional.of(new ValidationErrorDto("title", "Le titre est requis."));
+        }
+        if (dto.title().length() > 50) {
+            return Optional.of(new ValidationErrorDto("title", "Le titre ne doit pas dépasser 50 caractères."));
+        }
+        if (dto.description() == null || dto.description().isBlank()) {
+            return Optional.of(new ValidationErrorDto("description", "La description est requise."));
+        }
+        if (dto.description().length() > 255) {
+            return Optional.of(new ValidationErrorDto("description", "La description ne doit pas dépasser 255 caractères."));
+        }
+        if (dto.done() == null) {
+            return Optional.of(new ValidationErrorDto("done", "Le champ done est requis."));
+        }
+        return Optional.empty();
+    }
+
+    private static void sendError(HttpExchange exchange, int status, ValidationErrorDto error) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        String body = JsonUtils.serialize(error);
+        byte[] bytes = body.getBytes(UTF_8);
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
     }
 
     private static void sendResponse(HttpExchange exchange, int status, String json) throws IOException { // méthode qui va permettre d'envoyer une réponse HTTP

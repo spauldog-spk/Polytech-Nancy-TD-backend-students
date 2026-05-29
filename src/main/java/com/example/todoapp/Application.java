@@ -1,13 +1,17 @@
 package com.example.todoapp;
 
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.sql.SQLException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.todoapp.presentation.Controller;
+import com.example.todoapp.presentation.dto.ValidationErrorDto;
+import com.example.todoapp.util.JsonUtils;
 import com.sun.net.httpserver.HttpServer;
 
 /**
@@ -24,9 +28,20 @@ public class Application {
         server.createContext("/tasks", exchange -> {
             try {
                 Controller.handleTasks(exchange);
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 log.error("Failed to handle request", e);
+                try {
+                    String body = JsonUtils.serialize(new ValidationErrorDto("internal", "Internal server error"));
+                    exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+                    byte[] bytes = body.getBytes(UTF_8);
+                    exchange.sendResponseHeaders(500, bytes.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(bytes);
+                    }
+                } catch (IOException io) {
+                    log.error("Failed to send error response", io);
                 }
+            }
         });
         server.setExecutor(null);
         server.start();
